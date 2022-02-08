@@ -1,0 +1,6 @@
+﻿{
+  creationDate: DateTime_1,
+  firstName: Tony,
+  id: Guid_1,
+  lastName: Montana
+}
