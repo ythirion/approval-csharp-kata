@@ -248,6 +248,8 @@ public Task Map_PersonAccount_To_IndividualParty_With_Verify()
 ```
 * When you run the test, the library will create 2 files :
 ![cheat sheet](img/sfmapping_verify.png)
+  * *.received.*.txt file contains the json representation of our `target`
+  * *.verified.*.txt is our verified snapshot (empty for now)
 * It will use the `verified` file to make the assertions on our SUT
   * We need to exclude the `received` ones from our git repository
     * Simply add those line in your `.gitignore`
@@ -311,6 +313,7 @@ public Task Map_PersonAccount_To_IndividualParty_With_Verify()
 
 * We can now `approve` this result :
   * We can use `Verify Addin` in `Resharper` or `Rider`
+  * It will past the content from the `received` file in the `verified` one
     * Use it from the `Unit Tests` panel
   * `Drag & Drop` the received file on the Test Class to have this file depending on its Test Class
 
