@@ -40,6 +40,9 @@
         <None Update="Integration\DynamicControllerTests.Should_Get_Tony_Montana.verified.txt">
           <DependentUpon>DynamicControllerTests.cs</DependentUpon>
         </None>
+        <None Update="Unit\TemplateRetriever.Combination_Verify.verified.txt">
+          <DependentUpon>TemplateRetriever.cs</DependentUpon>
+        </None>
     </ItemGroup>
 
 </Project>
