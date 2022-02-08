@@ -34,6 +34,9 @@
             <ParentFile>TemplateRetriever</ParentFile>
             <DependentUpon>TemplateRetriever.cs</DependentUpon>
         </None>
+        <None Update="Integration\PartiesControllerTests.Should_Retrieve_Capone_And_Mesrine_With_Verify.verified.txt">
+          <DependentUpon>PartiesControllerTests.cs</DependentUpon>
+        </None>
     </ItemGroup>
 
 </Project>

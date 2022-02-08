@@ -323,8 +323,6 @@ public Task Map_PersonAccount_To_IndividualParty_With_Verify()
   * Hardcoded once by using `DataBuilder` (Capone / Mesrine)
   * Check its behavior by using "classical" assertions
   * Check it with `Verify`
-  * Compare the effort needed in both cases
-  * Discuss the pros and cons of those 2 approaches
 
 * Start by creating a test
   * Using `AppFactory` defined in the `Integration` folder
@@ -443,7 +441,39 @@ builder.Services.AddEndpointsApiExplorer()
 
 >Now the test should be green
 
+* Add an Approval Test on it :
 
+```c#
+[Fact]
+public async Task Should_Retrieve_Capone_And_Mesrine_With_Verify()
+    => await _client.GetAsync("/parties")
+        .Verify(_ => _.DontScrubDateTimes());
+        
+public static class VerifyExtensions
+{
+    public static SettingsTask WithSettings(
+        this SettingsTask settings,
+        Action<SerializationSettings>? action)
+        => action == null
+            ? settings
+            : settings.ModifySerialization(action);
+}
+
+public static class HttpExtensions
+{
+    public static async Task<T> Deserialize<T>(this HttpResponseMessage? response)
+        => JsonConvert.DeserializeObject<T>(await response!.Content.ReadAsStringAsync())!;
+
+    public static async Task Verify(
+        this Task<HttpResponseMessage> call,
+        Action<SerializationSettings>? settings = null)
+        => await VerifyJson(await (await call).Content.ReadAsStringAsync())
+            .WithSettings(settings);
+}
+```
+
+> Compare the effort needed in both cases  
+> Discuss the pros and cons of those 2 approaches
 
 #### Non deterministic data
 * Create a new `Controller` containing a GET method returning `Montana`

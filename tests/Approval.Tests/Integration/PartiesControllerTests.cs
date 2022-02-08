@@ -5,10 +5,12 @@ using System.Threading.Tasks;
 using Approval.Shared.ReadModels;
 using FluentAssertions;
 using FluentAssertions.Extensions;
+using VerifyXunit;
 using Xunit;
 
 namespace Approval.Tests.Integration
 {
+    [UsesVerify]
     public class PartiesControllerTests : IClassFixture<AppFactory>
     {
         private readonly HttpClient _client;
@@ -28,6 +30,11 @@ namespace Approval.Tests.Integration
             AssertCapone(parties[0]);
             AssertMesrine(parties[1]);
         }
+
+        [Fact]
+        public async Task Should_Retrieve_Capone_And_Mesrine_With_Verify()
+            => await _client.GetAsync("/parties")
+                .Verify(_ => _.DontScrubDateTimes());
 
         private void AssertCapone(IndividualParty capone)
         {
