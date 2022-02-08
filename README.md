@@ -220,7 +220,7 @@ private static readonly Func<PersonAccount, IEnumerable<IdentityDocument>>
     };
 ```
  
-* Discuss how easy it is to add new mappings
+> Discuss how easy it is to add new mappings
 
 ### 2) Approval Testing
 Also called : Characterization Tests OR Snapshot Tests or Golden Master
@@ -316,7 +316,7 @@ public Task Map_PersonAccount_To_IndividualParty_With_Verify()
 
 ![drag & drop](img/sfMapping_dragdrop.png)
 
-* What do you think about it ?
+> What do you think about it ?
 
 #### Integration Tests with Verify
 * Create a `Controller` containing a GET method returning `IndividualParties`
@@ -325,6 +325,124 @@ public Task Map_PersonAccount_To_IndividualParty_With_Verify()
   * Check it with `Verify`
   * Compare the effort needed in both cases
   * Discuss the pros and cons of those 2 approaches
+
+* Start by creating a test
+  * Using `AppFactory` defined in the `Integration` folder
+  * You should receive a `404` status code
+
+```c#
+public class PartiesControllerTests : IClassFixture<AppFactory>
+{
+    private readonly HttpClient _client;
+
+    public PartiesControllerTests(AppFactory appFactory)
+        => _client = appFactory.CreateClient();
+
+    [Fact]
+    public async Task Should_Retrieve_Capone_And_Mesrine()
+    {
+        var response = await _client.GetAsync("/parties");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var parties = await response.Deserialize<IndividualParty[]>();
+
+        parties.Should().HaveCount(2);
+        AssertCapone(parties[0]);
+        AssertMesrine(parties[1]);
+    }
+
+    private void AssertCapone(IndividualParty capone)
+    {
+        capone.Gender.Should().Be(Gender.Male);
+        capone.Title.Should().Be("Mr.");
+        capone.BirthCity.Should().Be("Brooklyn");
+        capone.BirthDate.Should().Be(25.January(1899));
+        capone.FirstName.Should().Be("Al");
+        capone.LastName.Should().Be("Capone");
+        capone.MiddleName.Should().Be("");
+        capone.PepMep.Should().BeFalse();
+        capone.Documents.Should().HaveCount(1);
+
+        var document = capone.Documents.ElementAt(0);
+        document.Number.Should().Be("89898*3234");
+        document.DocumentType.Should().Be("ID CARD");
+        document.ExpirationDate.Should().Be(5.January(2000));
+    }
+
+    private void AssertMesrine(IndividualParty mesrine)
+    {
+        mesrine.Gender.Should().Be(Gender.Male);
+        mesrine.Title.Should().Be("Mr.");
+        mesrine.BirthCity.Should().Be("Clichy");
+        mesrine.BirthDate.Should().Be(28.December(1936));
+        mesrine.FirstName.Should().Be("Jacques");
+        mesrine.LastName.Should().Be("Mesrine");
+        mesrine.MiddleName.Should().Be("");
+        mesrine.PepMep.Should().BeTrue();
+        mesrine.Documents.Should().HaveCount(2);
+
+        var idCard = mesrine.Documents.ElementAt(0);
+        idCard.Number.Should().Be("89AJQND8579");
+        idCard.DocumentType.Should().Be("ID CARD");
+        idCard.ExpirationDate.Should().Be(30.September(2020));
+
+        var passport = mesrine.Documents.ElementAt(1);
+        passport.Number.Should().Be("Not a number");
+        passport.DocumentType.Should().Be("FAKE PASSPORT");
+        passport.ExpirationDate.Should().Be(23.December(1990));
+    }
+}
+
+public static class HttpExtensions
+{
+    public static async Task<T> Deserialize<T>(this HttpResponseMessage? response)
+        => JsonConvert.DeserializeObject<T>(await response!.Content.ReadAsStringAsync())!;
+}
+```
+
+* Implement the Controller
+
+```c#
+[ApiController]
+[Route("[controller]")]
+public class PartiesController : Controller
+{
+    private readonly IndividualPartyService _individualPartyService;
+
+    public PartiesController(IndividualPartyService individualPartyService)
+        => _individualPartyService = individualPartyService;
+
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<IndividualParty>>> GetIndividualParties()
+        => Ok(await _individualPartyService.GetAllIndividualPartiesAsync());
+}
+
+public class IndividualPartyService
+{
+    private readonly IMapper _mapper;
+
+    public IndividualPartyService(IMapper mapper) => _mapper = mapper;
+
+    public async Task<IEnumerable<IndividualParty>> GetAllIndividualPartiesAsync()
+    {
+        var accounts = new[] {DataBuilder.AlCapone(), DataBuilder.Mesrine()};
+        return await Task.FromResult(_mapper.Map<PersonAccount[], IEnumerable<IndividualParty>>(accounts));
+    }
+}
+```
+
+* Now, we need to configure `IOC`
+  * For being able to receive `IMapper` instances we need to add a new package dependency `AutoMapper.Extensions,Microsoft.DependencyInjection`
+
+```c#
+builder.Services.AddEndpointsApiExplorer()
+    .AddAutoMapper(typeof(MapperProfile))
+    .AddScoped<IndividualPartyService>()
+    .AddSwaggerGen();
+```
+
+>Now the test should be green
+
 
 
 #### Non deterministic data
