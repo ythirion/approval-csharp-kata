@@ -236,7 +236,86 @@ This technique can be used on :
 
 #### Check your mapping
 * Add a new test to check this mapping `PersonAccount -> IndividualParty` by using the `Verify` library
-  * What do you think about it ?
+* First, add `Verify.xUnit` package dependency in `Approval.Tests`
+* Add a new Test
+  * To use `Verify` with xUnit there are 2 thinks to make :
+    * Our `Facts` need to return a `Task`
+    * Our Test classes must be decorated with `UsesVerify`
+```c#
+[Fact]
+public Task Map_PersonAccount_To_IndividualParty_With_Verify()
+    => Verify(MapAlCaponeToIndividualParty());
+```
+* When you run the test, the library will create 2 files :
+![cheat sheet](img/sfmapping_verify.png)
+* It will use the `verified` file to make the assertions on our SUT
+  * We need to exclude the `received` ones from our git repository
+    * Simply add those line in your `.gitignore`
+
+```text
+## Verify
+*.received.*
+```
+* We can make our initial verification to assert visually if the result is as expected
+  * More details about this step [here](https://github.com/VerifyTests/Verify#initial-verification)
+  * Let's check the result
+```json
+{
+  Title: Mr.,
+  LastName: Capone,
+  FirstName: Al,
+  MiddleName: ,
+  BirthCity: Brooklyn,
+  BirthDate: DateTime_1,
+  Documents: [
+    {
+      Number: 89898*3234,
+      DocumentType: ID CARD,
+      ExpirationDate: DateTime_2
+    }
+  ]
+}
+```
+* We have a problem here because our Dates have been replaced (Scrubbed in Approval language)
+  * By default, `Verify` will scrub non deterministic data (`Guid`, `Dates`, ...)
+  * Know more about [scrubbing](https://github.com/VerifyTests/Verify/blob/main/docs/scrubbers.md)
+  * We can override this behavior like this
+
+```c#
+[Fact]
+public Task Map_PersonAccount_To_IndividualParty_With_Verify()
+    => Verify(MapAlCaponeToIndividualParty())
+        .ModifySerialization(_ => _.DontScrubDateTimes());
+```
+
+* Now we receive this :
+
+```json
+{
+  Title: Mr.,
+  LastName: Capone,
+  FirstName: Al,
+  MiddleName: ,
+  BirthCity: Brooklyn,
+  BirthDate: 1899-01-25,
+  Documents: [
+    {
+      Number: 89898*3234,
+      DocumentType: ID CARD,
+      ExpirationDate: 2000-01-05
+    }
+  ]
+}
+```
+
+* We can now `approve` this result :
+  * We can use `Verify Addin` in `Resharper` or `Rider`
+    * Use it from the `Unit Tests` panel
+  * `Drag & Drop` the received file on the Test Class to have this file depending on its Test Class
+
+![drag & drop](img/sfMapping_dragdrop.png)
+
+* What do you think about it ?
 
 #### Integration Tests with Verify
 * Create a `Controller` containing a GET method returning `IndividualParties`

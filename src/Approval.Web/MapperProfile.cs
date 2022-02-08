@@ -3,10 +3,10 @@ using Approval.Shared.ReadModels;
 using Approval.Shared.SalesForce;
 using AutoMapper;
 
-namespace Approval.Web;
-
-public class MapperProfile: Profile
+namespace Approval.Web
 {
+    public class MapperProfile : Profile
+    {
         public MapperProfile()
         {
             CreateMap<Employee, EmployeeEntity>()
@@ -47,5 +47,5 @@ public class MapperProfile: Profile
 
                 return documents;
             };
+    }
 }
-
