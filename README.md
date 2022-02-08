@@ -84,7 +84,143 @@ public MapperProfile()
 * How could it be helpful in your current projects ?
 
 #### Add a new "feature" that brings mapping from `PersonAccount` to `IndividualParty`
-  * Discuss how easy it is to add new mappings
+* Let`s start by the test
+```c#
+private IndividualParty MapAlCaponeToIndividualParty() => null;
+
+[Fact]
+public void Map_PersonAccount_To_IndividualParty()
+{
+    var party = MapAlCaponeToIndividualParty();
+
+    party.Gender.Should().Be(Gender.Male);
+    party.Title.Should().Be("Mr.");
+    party.BirthCity.Should().Be("Brooklyn");
+    party.BirthDate.Should().Be(25.January(1899));
+    party.FirstName.Should().Be("Al");
+    party.LastName.Should().Be("Capone");
+    party.MiddleName.Should().Be("");
+    party.PepMep.Should().BeFalse();
+    party.Documents.Should().HaveCount(1);
+
+    var document = party.Documents.ElementAt(0);
+    document.Number.Should().Be("89898*3234");
+    document.DocumentType.Should().Be("ID CARD");
+    document.ExpirationDate.Should().Be(5.January(2000));
+}
+```
+* Refactor our test classes to have a common way to deal with `AutoMapper`
+    * Create a `MappingTests` class 
+    * Plug the 2 classes on it
+```c#
+public class MappingTests
+{
+    protected readonly IMapper Mapper;
+
+    protected MappingTests()
+    {
+        var config = new MapperConfiguration(cfg => { cfg.AddProfile<MapperProfile>(); });
+        Mapper = config.CreateMapper();
+    }
+}
+
+public class SalesForceMapping : MappingTests
+{
+    private IndividualParty MapAlCaponeToIndividualParty() 
+        => Mapper.Map<IndividualParty>(DataBuilder.AlCapone());
+
+    [Fact]
+    public void Map_PersonAccount_To_IndividualParty()
+    {
+        var party = MapAlCaponeToIndividualParty();
+
+        party.Gender.Should().Be(Gender.Male);
+        party.Title.Should().Be("Mr.");
+        party.BirthCity.Should().Be("Brooklyn");
+        party.BirthDate.Should().Be(25.January(1899));
+        party.FirstName.Should().Be("Al");
+        party.LastName.Should().Be("Capone");
+        party.MiddleName.Should().Be("");
+        party.PepMep.Should().BeFalse();
+        party.Documents.Should().HaveCount(1);
+
+        var document = party.Documents.ElementAt(0);
+        document.Number.Should().Be("89898*3234");
+        document.DocumentType.Should().Be("ID CARD");
+        document.ExpirationDate.Should().Be(5.January(2000));
+    }
+}
+```
+* Congrats the test is now red : `Missing type map configuration or unsupported mapping`
+* We need to register mapping between 2 records 
+  * Before, let's refactor our code to make it more flexible (*robust to refactoring*) to add a new Map :
+  * Create class `AutoMapperExtensions`
+```c#
+public static class AutoMapperExtensions
+{
+    public static IMappingExpression<TSource, TDestination> MapRecordMember<TSource, TDestination, TMember>(
+        this IMappingExpression<TSource, TDestination> mappingExpression,
+        Expression<Func<TDestination, TMember>> destinationMember, Expression<Func<TSource, TMember>> sourceMember)
+    {
+        var memberName = ReflectionHelper.FindProperty(destinationMember).Name;
+
+        return mappingExpression
+            .ForMember(destinationMember, opt => opt.MapFrom(sourceMember))
+            .ForCtorParam(memberName, opt => opt.MapFrom(sourceMember));
+    }
+}
+```
+* Refactor existing mapping
+```c#
+CreateMap<Employee, EmployeeEntity>()
+            .MapRecordMember(dest => dest.Id, src => src.EmployeeId)
+            .MapRecordMember(dest => dest.DateOfBirth, src => DateOnly.FromDateTime(src.DateOfBirth)); 
+```
+* Register the new mapping
+```c#
+public MapperProfile()
+{
+    CreateMap<Employee, EmployeeEntity>()
+        .MapRecordMember(dest => dest.Id, src => src.EmployeeId)
+        .MapRecordMember(dest => dest.DateOfBirth, src => DateOnly.FromDateTime(src.DateOfBirth));
+
+    CreateMap<PersonAccount, IndividualParty>()
+        .MapRecordMember(dest => dest.Title, src => src.Salutation)
+        .MapRecordMember(dest => dest.Gender,
+            src => src.FinServ__Gender_pc == "M" ? Gender.Male : Gender.Female)
+        .MapRecordMember(dest => dest.BirthCity, src => src.CityOfBirth__pc)
+        .MapRecordMember(dest => dest.BirthDate, src => DateTime.Parse(src.PersonBirthdate).Date)
+        .MapRecordMember(dest => dest.PepMep, src => bool.Parse(src.PEPMEPType_pc))
+        .MapRecordMember(dest => dest.Documents, src => ToIdentityDocuments(src));
+}
+
+private static readonly Func<PersonAccount, IEnumerable<IdentityDocument>>
+    ToIdentityDocuments = src =>
+    {
+        var documents = new List<IdentityDocument>
+        {
+            new IdentityDocument(
+                Number: src.LegalDocumentNumber1__c,
+                DocumentType: src.LegalDocumentName1__c,
+                ExpirationDate: DateTime.Parse(src.LegalDocumentExpirationDate1__c)
+            )
+        };
+
+        if (!string.IsNullOrEmpty(src.LegalDocumentNumber2__c))
+        {
+            documents.Add(
+                new IdentityDocument(
+                    Number: src.LegalDocumentNumber2__c,
+                    DocumentType: src.LegalDocumentName2__c,
+                    ExpirationDate: DateTime.Parse(src.LegalDocumentExpirationDate2__c)
+                ));
+        }
+
+        return documents;
+    };
+```
+ 
+* Discuss how easy it is to add new mappings
 
 ### 2) Approval Testing
 Also called : Characterization Tests OR Snapshot Tests or Golden Master

@@ -8,16 +8,8 @@ using Xunit;
 
 namespace Approval.Tests.Unit;
 
-public class EmployeeMapping
+public class EmployeeMapping : MappingTests
 {
-    private readonly IMapper _mapper;
-    
-    public EmployeeMapping()
-    {
-        var config = new MapperConfiguration(cfg => { cfg.AddProfile<MapperProfile>(); });
-        _mapper = config.CreateMapper();
-    }
-
     [Fact]
     public void Should_Map_Employee_To_EmployeeEntity()
     {
@@ -25,7 +17,7 @@ public class EmployeeMapping
             "john.doe@gmail.com", new DateTime(2022, 2, 7),
             2, "IT department");
 
-        var entity = _mapper.Map<EmployeeEntity>(employee);
+        var entity = Mapper.Map<EmployeeEntity>(employee);
 
         entity.Should().NotBeNull();
         entity.Id.Should().Be(employee.EmployeeId);
