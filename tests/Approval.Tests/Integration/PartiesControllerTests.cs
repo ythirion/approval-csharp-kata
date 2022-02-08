@@ -1,27 +1,23 @@
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
 using Approval.Shared.ReadModels;
 using FluentAssertions;
 using FluentAssertions.Extensions;
-using VerifyXunit;
 using Xunit;
 
 namespace Approval.Tests.Integration
 {
-    [UsesVerify]
-    public class PartiesControllerTests : IClassFixture<AppFactory>
+    public class PartiesControllerTests : IntegrationTests
     {
-        private readonly HttpClient _client;
-
-        public PartiesControllerTests(AppFactory appFactory)
-            => _client = appFactory.CreateClient();
+        public PartiesControllerTests(AppFactory appFactory) : base(appFactory)
+        {
+        }
 
         [Fact]
         public async Task Should_Retrieve_Capone_And_Mesrine()
         {
-            var response = await _client.GetAsync("/parties");
+            var response = await Client.GetAsync("/parties");
 
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             var parties = await response.Deserialize<IndividualParty[]>();
@@ -33,7 +29,7 @@ namespace Approval.Tests.Integration
 
         [Fact]
         public async Task Should_Retrieve_Capone_And_Mesrine_With_Verify()
-            => await _client.GetAsync("/parties")
+            => await Client.GetAsync("/parties")
                 .Verify(_ => _.DontScrubDateTimes());
 
         private void AssertCapone(IndividualParty capone)

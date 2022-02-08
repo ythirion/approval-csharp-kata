@@ -480,6 +480,60 @@ public static class HttpExtensions
   * How do you handle non-deterministic data in your tests ?
   * Use `Verify` to check your API result
 
+* Add a new failing test
+  * We refactor our integration tests to use a new `IntegrationTests` class 
+
+```c#
+public class DynamicControllerTests : IntegrationTests
+{
+    public DynamicControllerTests(AppFactory appFactory) : base(appFactory)
+    {
+    }
+
+    [Fact]
+    public async Task Should_Get_Tony_Montana()
+        => await Client.GetAsync("/dynamic")
+            .Verify();
+}
+
+[UsesVerify]
+public class IntegrationTests : IClassFixture<AppFactory>
+{
+    protected readonly HttpClient Client;
+
+    protected IntegrationTests(AppFactory appFactory)
+        => Client = appFactory.CreateClient();
+}
+```
+
+* Create the new `DynamicController`
+
+```c#
+[ApiController]
+[Route("[controller]")]
+public class DynamicController : Controller
+{
+    [HttpGet]
+    public async Task<ActionResult<DynamicPerson>> GetDynamicData()
+        => Ok(await Task.FromResult(DataBuilder.Montana()));
+}
+```
+
+* For the non deterministic data we receive :
+
+```text
+{
+  creationDate: DateTime_1,
+  firstName: Tony,
+  id: Guid_1,
+  lastName: Montana
+}
+```
+
+* Observe how the srubbing behaved
+
+> How could it be useful in your projects ?
+
 #### Refactor legacy code
 We have an improvable piece of code in our code base :
 ```c#
