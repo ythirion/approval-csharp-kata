@@ -259,7 +259,8 @@ public Task Map_PersonAccount_To_IndividualParty_With_Verify()
 * We can make our initial verification to assert visually if the result is as expected
   * More details about this step [here](https://github.com/VerifyTests/Verify#initial-verification)
   * Let's check the result
-```json
+
+```text
 {
   Title: Mr.,
   LastName: Capone,
@@ -290,7 +291,7 @@ public Task Map_PersonAccount_To_IndividualParty_With_Verify()
 
 * Now we receive this :
 
-```json
+```text
 {
   Title: Mr.,
   LastName: Capone,
@@ -324,6 +325,7 @@ public Task Map_PersonAccount_To_IndividualParty_With_Verify()
   * Check it with `Verify`
   * Compare the effort needed in both cases
   * Discuss the pros and cons of those 2 approaches
+
 
 #### Non deterministic data
 * Create a new `Controller` containing a GET method returning `Montana`
